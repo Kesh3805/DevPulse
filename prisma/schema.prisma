@@ -1,0 +1,53 @@
+// Prisma schema for DevPulse
+// DB: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  id         String   @id @default(uuid())
+  github_id  String?  @unique
+  username   String?
+  email      String?
+  is_public  Boolean  @default(false)
+  githubStats      GitHubStats[]
+  leetCodeStats    LeetCodeStats[]
+  publicProfile    PublicProfileSettings?
+}
+
+model GitHubStats {
+  id            String   @id @default(uuid())
+  user_id       String
+  week_start    DateTime
+  commits       Int
+  pull_requests Int
+  issues        Int
+  languages     Json
+  repo_breakdown Json
+  user          Users    @relation(fields: [user_id], references: [id])
+}
+
+model LeetCodeStats {
+  id         String   @id @default(uuid())
+  user_id    String
+  week_start DateTime
+  easy       Int
+  medium     Int
+  hard       Int
+  solved_tags Json
+  user       Users    @relation(fields: [user_id], references: [id])
+}
+
+model PublicProfileSettings {
+  user_id        String   @id
+  bio            String?
+  theme          String?
+  pinned_projects Json
+  user           Users    @relation(fields: [user_id], references: [id])
+} 

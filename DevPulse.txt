@@ -1,0 +1,268 @@
+---
+
+# 📊 **DevPulse – Developer Productivity & Portfolio Intelligence Platform**
+
+---
+
+## 1. 🧠 Vision
+
+> “DevPulse helps developers track their coding activity across platforms (like GitHub, LeetCode, Codeforces), visualize their progress over time, and create a shareable public profile that represents their developer fingerprint.”
+
+It’s like **Spotify Wrapped**, but for your code life.
+
+---
+
+## 2. 🎯 Goals
+
+### ✅ For Users
+
+* Track real GitHub activity (commits, PRs, issues)
+* Visualize LeetCode/Codeforces progress
+* Automatically generate a clean, public portfolio
+* Get weekly insights and coding streak summaries
+
+### ✅ For Recruiters/Viewers
+
+* View a developer's actual contributions and productivity
+* Quickly assess coding habits, focus areas, and top projects
+
+---
+
+## 3. 👥 Target Users
+
+* **Aspiring developers** wanting to show activity
+* **Students** preparing for interviews
+* **Freelancers** who want to show consistent work
+* **Recruiters** looking for signal beyond resumes
+
+---
+
+## 4. 🧱 Architecture Overview
+
+```
+             ┌────────────────────┐
+             │     Frontend       │ ← Next.js (React)
+             └────────────────────┘
+                       ↓
+         OAuth & API Calls (REST/GraphQL)
+                       ↓
+             ┌────────────────────┐
+             │     Backend API    │ ← Node.js / Express / FastAPI
+             └────────────────────┘
+                       ↓
+         ┌──────────────────────────────┐
+         │     Database & Caching      │ ← PostgreSQL + Redis
+         └──────────────────────────────┘
+                       ↓
+         ┌──────────────────────────────┐
+         │  3rd Party Integrations      │
+         │  (GitHub, LeetCode, etc.)    │
+         └──────────────────────────────┘
+```
+
+---
+
+## 5. 🛠️ Tech Stack
+
+| Layer         | Tech Choice                       | Why                                       |
+| ------------- | --------------------------------- | ----------------------------------------- |
+| **Frontend**  | Next.js + TailwindCSS             | Fast, modern, SEO-friendly, responsive UI |
+| **Backend**   | Node.js + Express OR FastAPI      | Familiar and scalable web frameworks      |
+| **Database**  | PostgreSQL                        | Structured, scalable, supports RLS        |
+| **Cache**     | Redis                             | For activity caching, rate limits         |
+| **Auth**      | GitHub OAuth (via NextAuth.js)    | Simple login, direct activity tracking    |
+| **Scheduler** | Railway Cron / Supabase Edge Jobs | Background syncing jobs                   |
+| **Deploy**    | Vercel (FE) + Railway (BE + DB)   | Simple, reliable, cost-effective          |
+| **Storage**   | Supabase or Cloudflare R2         | Public profile images, badges, etc.       |
+
+---
+
+## 6. 📦 Major Features
+
+### ✅ MVP
+
+1. GitHub activity tracker (commits, PRs, issues, languages)
+2. Weekly activity graphs and charts
+3. GitHub OAuth login
+4. Public profile (`/dev/keshav`)
+5. Dashboard UI with basic stats
+
+### 🔜 V2
+
+6. LeetCode/Codeforces integration
+7. Weekly email reports
+8. Manual handle support
+9. Pinned projects
+
+### 🔮 V3+
+
+10. VSCode/WakaTime integration
+11. Gamified achievements
+12. Shareable infographic generator
+13. Recruiter-facing dashboard
+14. Group leaderboard (optional)
+
+---
+
+## 7. 🧑‍🎨 UI Pages
+
+| Page/Route            | Description                                 |
+| --------------------- | ------------------------------------------- |
+| `/`                   | Landing page with value props               |
+| `/dashboard`          | Private dashboard after login               |
+| `/connect`            | Account linking page (GitHub, LC, etc.)     |
+| `/settings`           | Email prefs, profile toggle, themes         |
+| `/dev/:username`      | Public profile page                         |
+| `/admin` *(optional)* | Admin dashboard for managing users, metrics |
+
+---
+
+## 8. 🧩 API Routes
+
+### Internal REST Endpoints (`/api`)
+
+| Endpoint                    | Purpose                       |
+| --------------------------- | ----------------------------- |
+| `GET /api/github/stats`     | Fetch GitHub contributions    |
+| `GET /api/leetcode/stats`   | Scrape or fetch LeetCode data |
+| `POST /api/user/update`     | Save user settings            |
+| `GET /api/public/:username` | Fetch public profile data     |
+
+---
+
+## 9. 🧬 Database Schema
+
+### Tables
+
+```sql
+Users (
+  id UUID PRIMARY KEY,
+  github_id TEXT UNIQUE,
+  username TEXT,
+  email TEXT,
+  is_public BOOLEAN DEFAULT false
+)
+
+GitHubStats (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES Users(id),
+  week_start DATE,
+  commits INTEGER,
+  pull_requests INTEGER,
+  issues INTEGER,
+  languages JSONB,
+  repo_breakdown JSONB
+)
+
+LeetCodeStats (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES Users(id),
+  week_start DATE,
+  easy INTEGER,
+  medium INTEGER,
+  hard INTEGER,
+  solved_tags JSONB
+)
+
+PublicProfileSettings (
+  user_id UUID PRIMARY KEY REFERENCES Users(id),
+  bio TEXT,
+  theme TEXT,
+  pinned_projects JSONB
+)
+```
+
+---
+
+## 10. 🔒 Auth Flow
+
+* Use `NextAuth.js` with GitHub provider.
+* Request `repo`, `read:user`, and `user:email` scopes.
+* Store GitHub access token securely in DB (encrypted or hashed).
+
+---
+
+## 11. 🕐 Cron Jobs / Background Sync
+
+* Sync GitHub data every 12h
+* Sync LeetCode/Codeforces once daily (or via on-demand fetch)
+* Use Railway job runner, CRON, or serverless edge functions
+
+---
+
+## 12. 📁 File/Folder Structure
+
+```
+/devpulse
+├── /apps
+│   ├── /web               → Next.js frontend
+│   └── /api               → Express or FastAPI backend
+├── /scripts               → Sync workers, cron jobs
+├── /packages
+│   ├── /ui                → Shared Tailwind components
+│   ├── /utils             → API wrappers, fetchers
+├── /prisma                → DB models & seed
+├── /public
+│   ├── /images
+│   └── favicon.ico
+├── .env
+├── docker-compose.yml
+└── README.md
+```
+
+---
+
+## 13. 🚀 Deployment Plan
+
+| Service  | Platform                | Purpose                        |
+| -------- | ----------------------- | ------------------------------ |
+| Frontend | Vercel                  | Web UI and static pages        |
+| Backend  | Railway                 | API, scheduled jobs            |
+| DB       | Railway / Neon          | PostgreSQL instance            |
+| Storage  | Supabase                | Profile pictures, user uploads |
+| Auth     | NextAuth + GitHub OAuth |                                |
+
+---
+
+## 14. 🧪 Testing & QA
+
+* **Unit Tests**: Jest (frontend and backend logic)
+* **E2E Tests**: Playwright (simulate login → dashboard flow)
+* **API Monitoring**: Add logging + error tracking via Sentry
+* **Rate Limit Testing**: Simulate GitHub API under limits
+
+---
+
+## 15. 🎁 Potential Add-Ons
+
+* Export PDF resume from dashboard stats
+* Add GitHub Gists, StackOverflow stats
+* Social badges: “100 Days of Code”, “Top Contributor”
+* LLM-generated summaries (“Your week in code…”)
+* Mobile app wrapper (Expo + PWA hybrid)
+
+---
+
+## ✅ Launch Readiness Checklist
+
+| Area             | Criteria                            |
+| ---------------- | ----------------------------------- |
+| GitHub OAuth     | ✅ Fully working and scoped properly |
+| GitHub stats     | ✅ Aggregated and cached             |
+| LeetCode support | ✅ via handle or fallback to CSV     |
+| Profile page     | ✅ Mobile-friendly, clean            |
+| Hosting setup    | ✅ Vercel + Railway + DB live        |
+| Weekly job       | ✅ Sends test email or webhook log   |
+| README           | ✅ Has architecture + screenshots    |
+
+---
+
+## 💬 Want Me to Help With?
+
+* Design mockups (Figma) for dashboard + public profile
+* Setting up the monorepo or CI/CD pipelines
+* Writing the first GitHub OAuth + stats pull integration
+* Building the backend with FastAPI or Express boilerplate
+* Making the README + GitHub repo **pop**
+
+Let me know what part you want to build **first**, and I’ll walk you through it like a teammate.
