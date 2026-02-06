@@ -2,6 +2,11 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const GitHubAPI = require('./github');
+const {
+  getPublicProfile,
+  upsertUser,
+  updateProfile
+} = require('./store');
 
 const app = express();
 app.use(cors());
@@ -14,21 +19,16 @@ app.get('/', (req, res) => {
 // User upsert endpoint
 app.post('/api/user/upsert', async (req, res) => {
   try {
-    const { github_id, username, email, access_token } = req.body;
+    const { github_id, username, email } = req.body;
     
     console.log('User upsert request:', { github_id, username, email });
     
-    // TODO: Add Prisma client and actual database operations
-    // const user = await prisma.users.upsert({
-    //   where: { github_id },
-    //   update: { username, email },
-    //   create: { github_id, username, email }
-    // });
+    const user = upsertUser({ github_id, username, email });
     
     res.json({ 
       success: true, 
       message: 'User upserted successfully',
-      data: { github_id, username, email }
+      data: user
     });
   } catch (error) {
     console.error('Error upserting user:', error);
@@ -99,15 +99,83 @@ app.post('/api/github/stats/:username', async (req, res) => {
 
 // API Endpoints
 app.get('/api/leetcode/stats', (req, res) => {
-  res.json({ message: 'LeetCode stats endpoint (placeholder)' });
+  const { username } = req.query;
+  res.json({
+    success: true,
+    message: 'LeetCode stats endpoint (manual handle for now)',
+    data: {
+      username: username || null,
+      weekly: [],
+      note: 'LeetCode sync is not yet automated in the MVP.'
+    }
+  });
 });
 
 app.get('/api/public/:username', (req, res) => {
-  res.json({ message: `Public profile for ${req.params.username} (placeholder)` });
+  const { username } = req.params;
+  const profileResult = getPublicProfile(username);
+
+  if (profileResult.status === 'not_found') {
+    return res.status(404).json({
+      success: false,
+      message: `No user found for ${username}`
+    });
+  }
+
+  if (profileResult.status === 'private') {
+    return res.status(403).json({
+      success: false,
+      message: `Profile for ${username} is private`
+    });
+  }
+
+  return res.json({
+    success: true,
+    data: profileResult
+  });
 });
 
 app.post('/api/user/update', (req, res) => {
-  res.json({ message: 'User update endpoint (placeholder)' });
+  const {
+    github_id,
+    username,
+    is_public,
+    bio,
+    theme,
+    pinned_projects
+  } = req.body;
+
+  try {
+    const updated = updateProfile({
+      github_id,
+      username,
+      updates: {
+        is_public,
+        bio,
+        theme,
+        pinned_projects
+      }
+    });
+
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'User profile updated',
+      data: updated
+    });
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error updating user profile'
+    });
+  }
 });
 
 const PORT = process.env.PORT || 4000;
